@@ -1,0 +1,29 @@
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+void closuretest(){
+  //Int_t i=1;
+  Int_t sum=0;
+  ifstream in("closure");
+
+  string line,pt;
+  stringstream ss;
+  Double_t fit=0.,error=0.,data=0.,test;
+  if(in){
+    while(getline(in,line)){
+        ss<<line;
+        ss>>fit>>error>>data;
+        test=TMath::Abs(fit-data)/error;
+        //cout<<test<<endl;
+        printf("%.3f \n",test);
+      //i++;
+      ss.clear();
+    }
+  }else{
+    cout<<"no such file"<<endl;
+  }
+}
