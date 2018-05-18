@@ -14,8 +14,8 @@ using namespace std;
 Double_t ptmin,ptmax;
 Double_t ptlow[9]={25,30,35,40,45,50,60,80,120};
 Double_t pthigh[9]={30,35,40,45,50,60,80,120,400};
-Double_t chisolow[8]={3,4,5,6,7,8,9,10};
-Double_t chisohigh[11]={5,6,7,8,9,10,11,12,13,14,15};
+Double_t chisolow[32]={3,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,9,9,9,10,10};
+Double_t chisohigh[32]={5,7,9,11,13,15,6,8,10,12,14,7,9,11,13,15,8,10,12,14,9,11,13,15,10,12,14,11,13,15,12,14};
 
 void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
   TTree *t;
@@ -90,13 +90,10 @@ void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
   los5tree->Branch("chiso_los5",&chiso_los5,"chiso_los5/D");
   los5tree->Branch("scalef2",&scalef2,"scalef2/D");*/
   TH1D *histo = new TH1D("histo","histo",100,0.004,0.024);
-    TH1D *histo1[8][11];
-    for(Int_t i=0; i<8; i++){
-      for(Int_t j=0; j<11; j++){
-
-        histo1[i][j]=new TH1D(Form("chiso_%0.f_%0.f_%0.d_%0.d", chisolow[i], chisohigh[j], i, j),Form("histo_%0.f_%0.f", chisolow[i], chisohigh[j]),100,0.004,0.024);
-      }
-    }
+  TH1D *histo1[32];
+  for(Int_t i=0; i<32; i++){
+    histo1[i]=new TH1D(Form("chiso %0.f %0.f %0.d", chisolow[i], chisohigh[i], i+1),Form("chiso %0.f %0.f %0.d", chisolow[i], chisohigh[i], i+1),100,0.004,0.022);
+  }
 
   bool wjet;
   bool photon_cut;
@@ -108,8 +105,8 @@ void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
   //bool loose5;
   Double_t pho_pt[3];
   Int_t flag[3];
-  Int_t total[3]={0};
-  Double_t hi[8]={0};
+  Double_t total[3]={0};
+  Double_t hi[32]={0};
   Long64_t nentries=t->GetEntries();
   for (Long64_t jentry=0; jentry<nentries;jentry++){
     t->GetEntry(jentry);
@@ -129,6 +126,7 @@ void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
        tmp[2]=true;
        photon_cut = (photon_drla[j]>0.5 && fabs(photon_eta[j])<1.442 && photon_pt[j]>= ptlow && photon_pt[j]<pthigh);
        //medium = photon_hoe[j]<0.0396 && photon_nhiso[j]<2.725+0.0148*photon_pt[j]+0.000017*photon_pt[j]*photon_pt[j] && photon_phoiso[j]<2.571+0.0047*photon_pt[j];
+       //medium = photon_hoe[j]<5*0.0597 && photon_nhiso[j]<5*(10.910+0.0148*photon_pt[j]+0.000017*photon_pt[j]*photon_pt[j]) && photon_phoiso[j]<5*(3.630+0.0047*photon_pt[j]);
        medium = photon_hoe[j]<0.0597 && photon_nhiso[j]<(10.910+0.0148*photon_pt[j]+0.000017*photon_pt[j]*photon_pt[j]) && photon_phoiso[j]<(3.630+0.0047*photon_pt[j]);
        loose = photon_hoe[j]<0.0597 && photon_nhiso[j]<(10.910+0.0148*photon_pt[j]+0.000017*photon_pt[j]*photon_pt[j]) && photon_phoiso[j]<(3.630+0.0047*photon_pt[j]);
         if ( wjet && photon_cut && tmp[isprom]) {
@@ -168,22 +166,17 @@ void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
         scalef0=scalef;
         medtree->Fill();
         tre+=scalef;
-        if (isprom ==1 && chiso_med<0.441) {
+        if (isprom ==0 && chiso_med<0.441) {
           histo->Fill(sieie_med,scalef);
           his+=scalef;
         }
-        for(Int_t k=0; k<8; k++){
-          for(Int_t q=0; q<11; q++){
-            if (isprom ==1 && chiso_med>=chisolow[k] && chiso_med<chisohigh[q]) {
-              histo1[k][q]->Fill(sieie_med,scalef);
+        if (isprom ==1){
+          for(Int_t k=0; k<32; k++){
+            if (chiso_med>chisolow[k] && chiso_med<chisohigh[k]) {
+              histo1[k]->Fill(sieie_med,scalef);
               hi[k]+=scalef;
             }
           }
-
-        }
-        if (isprom ==0 && chiso_med<10. && chiso_med>4.) {
-          histo->Fill(sieie_med,scalef);
-          his+=scalef;
         }
         if (isprom==2 && chiso_med<0.441) {
           histo->Fill(sieie_med,scalef);
@@ -232,7 +225,7 @@ void slectree(TTree *t1,Int_t isprom, Double_t ptlow, Double_t pthigh){
 int produceroot(){
   /*Tt *t = new Tt("treeDumper/PKUCandidates");
   t->Add("../treePKU*.root");*/
-  TFile *f=new TFile("outwa.root");
+  TFile *f=new TFile("wapure.root");
   TTree *t=(TTree*)f->Get("demo");
   TFile *f1=new TFile("datamc.root");
   TTree *t1=(TTree*)f1->Get("demo");

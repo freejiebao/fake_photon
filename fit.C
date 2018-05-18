@@ -6,20 +6,37 @@
 #include "RooAddPdf.h"
 #include <sstream>
 
+using namespace std;
 using namespace RooFit;
-string fit(float lowpt, float highpt){
 
-	TFile* fdata = TFile::Open(Form("wajet_%0.f_%0.f_data.root", lowpt, highpt));
-	TFile* ftrue = TFile::Open(Form("wa_%0.f_%0.f_true.root", lowpt, highpt));
-//	TFile* ftrue = TFile::Open(Form("../fit_produce/ZA_%0.f_%0.f_true.root", lowpt, highpt));
-	TFile* ffake = TFile::Open(Form("wajet_%0.f_%0.f_fake.root", lowpt, highpt));
-//	TFile* ffake = TFile::Open(Form("../fit_produce/ZJets_FX_%0.f_%0.f_fake.root", lowpt, highpt));
+Double_t lowp[9]={25,30,35,40,45,50,60,80,120};
+Double_t highp[9]={30,35,40,45,50,60,80,120,400};
+//Double_t meddata[9]={673.346,431.562,308.228,209.455,172.462,232.315,212.123,132.004,80.4759};
+//Double_t meddata[9]={356.436,244.029,175.853,128.387,95.3019,135.169,147.579,114.372,74.5076};//in fact, its pure data of loose id, not medium
+//Double_t meddata[9]={361.847,248.008,178.256,130.466,96.4932,137.189,149.405,116.126,74.6354};//in fact, its pure data of 5*loose id, not medium
+//Double_t meddata[9]={343.789,235.839,170.433,124.252,92.1307,131.857,143.057,111.314,73.2027};//medium
+//Double_t meddata[9]={800.004,348.874,215.735,120.683,85.2058,99.335,66.5427,52.2641,12.6274};//medium fake
+//Double_t meddata[9]={1711.46,823.544,497.428,298.87,193.573,250.71,186.389,160.47,58.2073};//5*loose fake
+Double_t meddata[9]={1071.14,465.244,280.952,162.624,120.507,139.548,94.9723,91.7217,27.3025};//loose fake
+Double_t losdata[9]={696.836,442.904,318.863,215.68,176.689,238.755,216.645,135.062,82.8212};
+
+Double_t chilow[32]={3,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,9,9,9,10,10};
+Double_t chihigh[32]={5,7,9,11,13,15,6,8,10,12,14,7,9,11,13,15,8,10,12,14,9,11,13,15,10,12,14,11,13,15,12,14};
+
+string fit(TH1F* hdata_, TH1F* htrue_, TH1F* hfake_, int k, int sideband){
+
+	/*TFile* fdata = TFile::Open(Form("wajet_%0.f_%0.f_data.root", lowp[k], highp[k]));
+	TFile* ftrue = TFile::Open(Form("wa_%0.f_%0.f_true.root", lowp[k], highp[k]));
+//	TFile* ftrue = TFile::Open(Form("../fit_produce/ZA_%0.f_%0.f_true.root", lowp[k], highp[k]));
+	TFile* ffake = TFile::Open(Form("wajet_%0.f_%0.f_fake.root", lowp[k], highp[k]));
+//	TFile* ffake = TFile::Open(Form("../fit_produce/ZJets_FX_%0.f_%0.f_fake.root", lowp[k], highp[k]));
 
 	TH1F* hdata_ = (TH1F*)fdata->Get("histo");
 	TH1F* htrue_ = (TH1F*)ftrue->Get("histo");
-	TH1F* hfake_ = (TH1F*)ffake->Get("chiso_8_10_5_5");
-
-
+	TH1F* hfake_ = (TH1F*)ffake->Get("histo");
+*/
+  ofstream opf(Form("source_%.f_%.f",lowp[k],highp[k]),ios::app);
+	string str="";
 	Int_t nBins = 9;
 	Double_t bins[10];
 	for (Int_t i=0;i<10;i++){
@@ -64,7 +81,7 @@ string fit(float lowpt, float highpt){
 	RooChi2Var chi2("chi2", "chi2", fullpdf, data_hist);
 	Double_t chi2ToNDF = chi2.getVal() / (nBins - 2);
 
-	RooPlot* xframe = sieie.frame(Title(Form("Barrel region, %0.f GeV < photon PT < %0.f GeV ",lowpt, highpt)), Bins(nBins));
+	RooPlot* xframe = sieie.frame(Title(Form("Barrel region, %0.f GeV < photon PT < %0.f GeV,  %0.f < chiso < %0.f",lowp[k], highp[k],chilow[sideband],chihigh[sideband])), Bins(nBins));
 	data_hist.plotOn(xframe);
 	fullpdf.plotOn(xframe, Name("sum"), LineColor(kRed));
 	fullpdf.plotOn(xframe, Components("ntrue"), Name("true"),LineColor(kGreen), LineStyle(9));
@@ -139,7 +156,7 @@ string fit(float lowpt, float highpt){
 								+ nFake_inwindow*nFake_inwindow*nDataInWindowErr*nDataInWindowErr/(nDataInWindow
 									*nDataInWindow*nDataInWindow*nDataInWindow));
 
-	ofstream myfile(TString("fakerate_") + Form("photon_pt%0.f_%0.f.txt", lowpt, highpt),ios::out);
+	ofstream myfile(TString("fakerate_") + Form("photon_pt%0.f_%0.f_chiso_%0.f_%0.f.txt", lowp[k], highp[k],chilow[sideband],chihigh[sideband]),ios::out);
 
 	myfile << "data in window = " << nDataInWindow << "+-" << nDataInWindowErr <<" "<<nDataInWindow_1<<" "<<nDataInWindow_2<<" "<<nDataInWindow_3<<" "<<nDataInWindow_4<<" "<<nDataInWindow_5<<" "<<nDataInWindow_6<<" "<<nDataInWindow_7<<std::endl;
 	myfile << "nDatatotal = " << nDatatotal << std::endl;
@@ -153,15 +170,20 @@ string fit(float lowpt, float highpt){
 	string str1="",str2="";
 	stringstream ss;
 	ss.clear();
-	ss<<nTrue_fit;
+	ss<<nFake_fit;
 	ss>>str1;
 	ss.clear();
-	ss<<nTrue_fitErr;
+	ss<<nFake_fitErr;
+	ss>>str2;
+	ss.clear();
+	str1=str1+" "+str2;
+	ss<<meddata[k];
 	ss>>str2;
 	ss.clear();
 	str1=str1+" "+str2;
 	cout<<str1<<"Hhhhhhhhhhhh"<<endl;
-
+  opf<<str1<<endl;
+  opf.close();
 	TString strFR = "FR = (";
         float FRFloat = (1000 * fakerate);
         int FRInt = FRFloat;
@@ -182,16 +204,16 @@ string fit(float lowpt, float highpt){
         textFR->Draw();
 
 	char buffer[256];
-	sprintf(buffer, "%0.f_%0.f.png",lowpt,highpt);
+	sprintf(buffer, "pt_%0.f_%0.f_sideband_%0.f_%0.f.png",lowp[k],highp[k],chilow[sideband],chihigh[sideband]);
 	c1->SaveAs(buffer);
 
-	TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
+/*	TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
 	c2->cd();
 
 	gStyle->SetOptStat(0);
 	hfake->SetLineStyle(1);
 	htrue->SetLineStyle(1);
-	htrue -> SetTitle(Form("template comparision: pt %0.f_%0.f",lowpt,highpt));
+	htrue -> SetTitle(Form("template comparision: pt %0.f_%0.f",lowp[k],highp[k]));
   htrue -> DrawNormalized("Hist,e");
 	hfake -> SetTitle("template comparision");
 	hfake -> DrawNormalized("Hist,same,e");
@@ -201,6 +223,6 @@ string fit(float lowpt, float highpt){
 	leg2->AddEntry(htrue, "Ture photons", "L");
 	leg2->AddEntry(hfake, "Fake photons", "L");
 	leg2->Draw("same");
-	c2->SaveAs(Form("%0.f_%0.fnormalized.png",lowpt,highpt));
+	c2->SaveAs(Form("%0.f_%0.fnormalized.png",lowp[k],highp[k]));*/
   return str1;
 }
